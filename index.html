@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Battle Test</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        background: #111;
+        color: white;
+        font-family: Arial, sans-serif;
+        overflow: hidden;
+    }
+
+    .game {
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .top {
+        height: 12%;
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        background: #181818;
+        font-size: 32px;
+        font-weight: bold;
+    }
+
+    .team-a {
+        color: #4da6ff;
+    }
+
+    .team-b {
+        color: #ff5c5c;
+    }
+
+    .arena {
+        position: relative;
+        flex: 1;
+        display: flex;
+        overflow: hidden;
+        background: #222;
+    }
+
+    .side {
+        width: 50%;
+        padding: 20px;
+        position: relative;
+    }
+
+    .side-a {
+        border-right: 3px solid white;
+        background: #102338;
+    }
+
+    .side-b {
+        background: #381919;
+    }
+
+    .players {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        align-content: flex-start;
+    }
+
+    .player {
+        width: 145px;
+        min-height: 150px;
+        padding: 12px;
+        border-radius: 15px;
+        background: rgba(255,255,255,0.12);
+        text-align: center;
+        border: 2px solid rgba(255,255,255,0.2);
+    }
+
+    .avatar {
+        width: 65px;
+        height: 65px;
+        margin: auto;
+        border-radius: 50%;
+        background: #555;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+    }
+
+    .name {
+        margin-top: 8px;
+        font-weight: bold;
+        font-size: 17px;
+    }
+
+    .lives {
+        margin-top: 5px;
+        font-size: 18px;
+        font-weight: bold;
+    }
+
+    .projectile {
+        position: absolute;
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        background: white;
+        box-shadow: 0 0 12px white;
+        z-index: 20;
+        pointer-events: none;
+    }
+
+    .controls {
+        height: 25%;
+        background: #151515;
+        padding: 15px;
+        overflow-y: auto;
+    }
+
+    .controls h2 {
+        margin: 0 0 10px 0;
+    }
+
+    .row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 10px;
+    }
+
+    select,
+    input,
+    button {
+        padding: 10px;
+        border-radius: 8px;
+        border: none;
+        font-size: 16px;
+    }
+
+    button {
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    .btn-a {
+        background: #4da6ff;
+        color: white;
+    }
+
+    .btn-b {
+        background: #ff5c5c;
+        color: white;
+    }
+
+    .gift {
+        background: #ffd166;
+        color: #111;
+    }
+
+    .status {
+        color: #bbb;
+        margin-top: 5px;
+    }
+
+    .message {
+        position: absolute;
+        top: 15px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 10px 20px;
+        background: rgba(0,0,0,0.8);
+        border-radius: 10px;
+        z-index: 50;
+        font-weight: bold;
+    }
+</style>
+</head>
+
+<body>
+
+<div class="game">
+
+    <div class="top">
+        <div class="team-a">⚽ MESSI — TEAM A</div>
+        <div>LIVE BATTLE</div>
+        <div class="team-b">TEAM B — RONALDO ⚽</div>
+    </div>
+
+    <div class="arena" id="arena">
+
+        <div class="side side-a">
+            <div class="players" id="playersA"></div>
+        </div>
+
+        <div class="side side-b">
+            <div class="players" id="playersB"></div>
+        </div>
+
+        <div class="message" id="message">
+            Testversion
+        </div>
+
+    </div>
+
+    <div class="controls">
+
+        <h2>🧪 Test-Chat</h2>
+
+        <div class="row">
+
+            <select id="playerSelect">
+                <option value="max">Max</option>
+                <option value="luca">Luca</option>
+                <option value="anna">Anna</option>
+                <option value="noah">Noah</option>
+            </select>
+
+            <input
+                id="chatInput"
+                type="text"
+                maxlength="1"
+                placeholder="A oder B"
+            >
+
+            <button onclick="sendChat()">
+                Nachricht senden
+            </button>
+
+        </div>
+
+        <div class="row">
+
+            <button class="btn-a" onclick="sendTest('A')">
+                A senden
+            </button>
+
+            <button class="btn-b" onclick="sendTest('B')">
+                B senden
+            </button>
+
+            <button class="gift" onclick="sendRose()">
+                🌹 Rose +50
+            </button>
+
+            <button class="gift" onclick="sendGalaxy()">
+                🌌 Galaxy +10'000
+            </button>
+
+        </div>
+
+        <div class="status" id="status">
+            Noch kein Spieler aktiv.
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+const players = {
+
+    max: {
+        name: "Max",
+        team: null,
+        lives: 0,
+        avatar: "👤"
+    },
+
+    luca: {
+        name: "Luca",
+        team: null,
+        lives: 0,
+        avatar: "👤"
+    },
+
+    anna: {
+        name: "Anna",
+        team: null,
+        lives: 0,
+        avatar: "👤"
+    },
+
+    noah: {
+        name: "Noah",
+        team: null,
+        lives: 0,
+        avatar: "👤"
+    }
+
+};
+
+
+function showMessage(text) {
+
+    const message = document.getElementById("message");
+
+    message.textContent = text;
+
+    setTimeout(() => {
+        message.textContent = "Testversion";
+    }, 1500);
+}
+
+
+function renderPlayers() {
+
+    const playersA = document.getElementById("playersA");
+    const playersB = document.getElementById("playersB");
+
+    playersA.innerHTML = "";
+    playersB.innerHTML = "";
+
+    Object.values(players).forEach(player => {
+
+        if (!player.team || player.eliminated) {
+            return;
+        }
+
+        const card = document.createElement("div");
+
+        card.className = "player";
+        card.dataset.playerId = Object.keys(players).find(
+    id => players[id] === player
+);
+
+        card.innerHTML = `
+            <div class="avatar">${player.avatar}</div>
+            <div class="name">${player.name}</div>
+            <div class="lives">❤️ ${player.lives}</div>
+        `;
+
+        if (player.team === "A") {
+            playersA.appendChild(card);
+        }
+
+        if (player.team === "B") {
+            playersB.appendChild(card);
+        }
+
+    });
+
+}
+
+
+function getSelectedPlayer() {
+
+    const id = document.getElementById("playerSelect").value;
+
+    return players[id];
+
+}
+
+
+function processCommand(player, command) {
+
+    command = command.toUpperCase();
+
+    if (command !== "A" && command !== "B") {
+        return;
+    }
+
+    // Spieler ist noch nicht in einem Team
+    if (!player.team) {
+
+        player.team = command;
+        player.lives = 200;
+
+        showMessage(
+            player.name +
+            " ist Team " +
+            command +
+            " beigetreten! ❤️ 200"
+        );
+
+        renderPlayers();
+
+        return;
+    }
+
+    // Spieler gehört bereits zu einem Team
+    if (player.team === command) {
+
+        player.lives += 1;
+
+        renderPlayers();
+
+        showMessage(
+            player.name +
+            " +1 Leben ❤️"
+        );
+
+        shoot(player);
+
+        return;
+    }
+
+    // Falscher Buchstabe
+    showMessage(
+        player.name +
+        " gehört zu Team " +
+        player.team
+    );
+
+}
+
+
+function sendChat() {
+
+    const input =
+        document.getElementById("chatInput");
+
+    const command =
+        input.value.trim().toUpperCase();
+
+    const player =
+        getSelectedPlayer();
+
+    input.value = "";
+
+    processCommand(player, command);
+
+}
+
+
+function sendTest(command) {
+
+    const player =
+        getSelectedPlayer();
+
+    processCommand(player, command);
+
+}
+
+
+function sendRose() {
+
+    const player =
+        getSelectedPlayer();
+
+    if (!player.team) {
+
+        showMessage(
+            "Spieler muss zuerst A oder B wählen."
+        );
+
+        return;
+    }
+
+    player.lives += 50;
+
+    renderPlayers();
+
+    showMessage(
+        "🌹 " +
+        player.name +
+        " bekommt +50 Leben!"
+    );
+
+}
+
+
+function sendGalaxy() {
+
+    const player =
+        getSelectedPlayer();
+
+    if (!player.team) {
+
+        showMessage(
+            "Spieler muss zuerst A oder B wählen."
+        );
+
+        return;
+    }
+
+    player.lives += 10000;
+
+    renderPlayers();
+
+    showMessage(
+        "🌌 " +
+        player.name +
+        " bekommt +10'000 Leben!"
+    );
+
+}
+
+function shoot(player) {
+
+    const arena = document.getElementById("arena");
+
+    // Gegner auf der anderen Seite suchen
+    const opponents = Object.entries(players).filter(
+        ([id, opponent]) =>
+            opponent.team !== null &&
+            opponent.team !== player.team &&
+            opponent.lives > 0
+    );
+
+    // Wenn niemand auf der anderen Seite ist
+    if (opponents.length === 0) {
+
+        showMessage("Keine Gegner auf der anderen Seite.");
+
+        return;
+    }
+
+    // EINEN bestimmten Gegner auswählen
+    const [targetId, target] =
+        opponents[Math.floor(Math.random() * opponents.length)];
+
+    // Das Profil des Angreifers finden
+    const playerId = Object.keys(players).find(
+        id => players[id] === player
+    );
+
+    const sourceCard = document.querySelector(
+        `[data-player-id="${playerId}"]`
+    );
+
+    // Das Profil des ausgewählten Gegners finden
+    const targetCard = document.querySelector(
+        `[data-player-id="${targetId}"]`
+    );
+
+    if (!sourceCard || !targetCard) {
+        return;
+    }
+
+    const arenaRect = arena.getBoundingClientRect();
+    const sourceRect = sourceCard.getBoundingClientRect();
+    const targetRect = targetCard.getBoundingClientRect();
+
+    // Kleinen Punkt erstellen
+    const projectile = document.createElement("div");
+
+    projectile.className = "projectile";
+
+    const size = 13;
+
+    // Startpunkt = Mitte des eigenen Profils
+    const startX =
+        sourceRect.left +
+        sourceRect.width / 2 -
+        arenaRect.left -
+        size / 2;
+
+    const startY =
+        sourceRect.top +
+        sourceRect.height / 2 -
+        arenaRect.top -
+        size / 2;
+
+    // Zielpunkt = Mitte des ausgewählten Gegners
+    const endX =
+        targetRect.left +
+        targetRect.width / 2 -
+        arenaRect.left -
+        size / 2;
+
+    const endY =
+        targetRect.top +
+        targetRect.height / 2 -
+        arenaRect.top -
+        size / 2;
+
+    projectile.style.left = startX + "px";
+    projectile.style.top = startY + "px";
+
+    arena.appendChild(projectile);
+
+    // Punkt fliegt GENAU zum ausgewählten Profil
+    const animation = projectile.animate(
+        [
+            {
+                left: startX + "px",
+                top: startY + "px"
+            },
+            {
+                left: endX + "px",
+                top: endY + "px"
+            }
+        ],
+        {
+            duration: 800,
+            easing: "linear"
+        }
+    );
+
+    // Wenn der Punkt beim Gegner angekommen ist
+    animation.onfinish = () => {
+
+        projectile.remove();
+
+        // NUR dieser Gegner verliert ein Leben
+        target.lives -= 1;
+
+        if (target.lives < 0) {
+            target.lives = 0;
+        }
+if (target.lives === 0) {
+    target.eliminated = true;
+
+    showMessage(
+        "💀 " +
+        target.name +
+        " ist ausgeschieden!"
+    );
+}s
+        renderPlayers();
+
+        showMessage(
+            "💥 " +
+            target.name +
+            " wurde getroffen! -1 Leben"
+        );
+    };
+}
+
+
+
+renderPlayers();
+
+</script>
+
+</body>
+</html>
